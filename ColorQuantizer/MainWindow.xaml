@@ -1,0 +1,25 @@
+﻿<Window x:Class="ColorQuantizer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorQuantizer"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="350" Width="525">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="5*"/>
+            <ColumnDefinition Width="2*"/>
+        </Grid.ColumnDefinitions>
+        
+        <StackPanel Grid.Column="0">
+            <Image Name="ImageToShow"></Image>
+        </StackPanel>
+        
+        <StackPanel Grid.Column="1" Background="Coral">
+            <TextBox Width="100" Margin="10,20" Name="PixelCountTextBox" Text="256"/>
+            
+            <Button Margin="10,20" Content="Start" Click="Quantize"/>
+        </StackPanel>
+    </Grid>
+</Window>
