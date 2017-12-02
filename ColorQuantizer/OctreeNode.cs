@@ -9,11 +9,11 @@ namespace ColorQuantizer
         public ColorRgb Color = new ColorRgb(0,0,0);
         public int PixelCount = 0;
         public int PaletteIndex = 0;
-        private OctreeNode[] _children = new OctreeNode[8];
+        private readonly OctreeNode[] _children = new OctreeNode[8];
 
         private const int MaxDepth = 8;
 
-        public OctreeNode(int level, OctreeQuantizer parent)
+        public OctreeNode(int level, OctreeQuantizerBase parent)
         {
             if (level < MaxDepth - 1)
             {
@@ -52,7 +52,7 @@ namespace ColorQuantizer
             return PixelCount + _children.Sum(node => node.PixelCount);
         }
 
-        public void AddColor(ColorRgb color, int level, OctreeQuantizer parent)
+        public void AddColor(ColorRgb color, int level, OctreeQuantizerBase parent)
         {
             if (level >= MaxDepth)
             {
@@ -105,7 +105,13 @@ namespace ColorQuantizer
                     Color.Green += node.Color.Green;
                     Color.Blue += node.Color.Blue;
                     PixelCount += node.PixelCount;
-                    result += 1;
+                    if (node.PixelCount != 0)
+                    {
+                        result += 1;
+                        node.PixelCount = 0;
+                        node.Color = new ColorRgb(0, 0, 0);
+                    }
+                    
                 }
             }
 

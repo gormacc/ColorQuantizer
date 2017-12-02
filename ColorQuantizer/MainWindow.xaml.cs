@@ -18,15 +18,17 @@ namespace ColorQuantizer
             InitializeComponent();
         }
 
-        public void Quantize(object sender, RoutedEventArgs e)
+        public void QuantizeNormal(object sender, RoutedEventArgs e)
         {
-            // zaimplementuj
-
-            Bitmap bitmap = ConvertImageToBitmap(ConvertFileToBitmapImage("test.jpg", false));
+            Bitmap bitmap = ConvertImageToBitmap(ConvertFileToBitmapImage("test2.jpg", false));
             int height = bitmap.Height;
             int width = bitmap.Width;
 
-            OctreeQuantizer octree = new OctreeQuantizer();
+            int colorCount;
+
+            if (!int.TryParse(PixelCountTextBox.Text, out colorCount)) return;
+
+            OctreeQuantizerNormal octree = new OctreeQuantizerNormal(colorCount);
 
             for (int i = 0; i < width; i++)
             {
@@ -37,11 +39,7 @@ namespace ColorQuantizer
                 }
             }
 
-            int colorCount;
-
-            if (!int.TryParse(PixelCountTextBox.Text, out colorCount)) return;
-
-            List<System.Windows.Media.Color> palette = octree.MakePalette(colorCount);
+            List<System.Windows.Media.Color> palette = octree.MakePalette();
 
             Bitmap outBitmap = new Bitmap(width, height);
 
@@ -59,6 +57,67 @@ namespace ColorQuantizer
 
             ShowImageWindow window = new ShowImageWindow(ConvertBitmapToBitmapImage(outBitmap));
             window.Show();
+
+            ShowColorWindow(palette);
+        }
+
+        public void QuantizeInstantReduction(object sender, RoutedEventArgs e)
+        {
+            Bitmap bitmap = ConvertImageToBitmap(ConvertFileToBitmapImage("test.jpg", false));
+            int height = bitmap.Height;
+            int width = bitmap.Width;
+
+            int colorCount;
+
+            if (!int.TryParse(PixelCountTextBox.Text, out colorCount)) return;
+
+            OctreeQuantizerInstantReduction octree = new OctreeQuantizerInstantReduction(colorCount);
+
+            for (int i = 0; i < width; i++)
+            {
+                for (int j = 0; j < height; j++)
+                {
+                    Color pixel = bitmap.GetPixel(i, j);
+                    octree.AddColor(new ColorRgb(pixel.R, pixel.G, pixel.B));
+                }
+            }
+
+            List<System.Windows.Media.Color> palette = octree.MakePalette();
+
+            Bitmap outBitmap = new Bitmap(width, height);
+
+            for (int i = 0; i < width; i++)
+            {
+                for (int j = 0; j < height; j++)
+                {
+                    Color pixel = bitmap.GetPixel(i, j);
+                    int index = octree.GetPalletteIndex(new ColorRgb(pixel.R, pixel.G, pixel.B));
+
+                    System.Windows.Media.Color color = palette[index];
+                    outBitmap.SetPixel(i, j, Color.FromArgb(color.A, color.R, color.G, color.B));
+                }
+            }
+
+            ShowImageWindow window = new ShowImageWindow(ConvertBitmapToBitmapImage(outBitmap));
+            window.Show();
+
+            ShowColorWindow(palette);
+        }
+
+        private void ShowColorWindow(List<System.Windows.Media.Color> palette)
+        {
+            //Bitmap colorBitmap = new Bitmap(4, 4);
+
+            //for (int i = 0; i < palette.Count; i++)
+            //{
+            //    int a = i / 4;
+            //    int b = i % 4;
+            //    var color = palette[i];
+            //    colorBitmap.SetPixel(a, b, Color.FromArgb(color.A, color.R, color.G, color.B));
+            //}
+
+            //ShowImageWindow window = new ShowImageWindow(ConvertBitmapToBitmapImage(colorBitmap));
+            //window.Show();
         }
 
         public Bitmap ConvertImageToBitmap(BitmapImage bitmapImage)

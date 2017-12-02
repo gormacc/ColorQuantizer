@@ -3,19 +3,23 @@ using System.Windows.Media;
 
 namespace ColorQuantizer
 {
-    public class OctreeQuantizer
+    public class OctreeQuantizerBase
     {
         public const int MaxDepth = 8;
 
-        public List<OctreeNode>[] levels = new List<OctreeNode>[MaxDepth];
+        public List<OctreeNode>[] Levels = new List<OctreeNode>[MaxDepth];
+
+        protected int ColorCount = 0;
 
         public OctreeNode Root;        
 
-        public OctreeQuantizer()
+        public OctreeQuantizerBase(int colorCount)
         {
+            ColorCount = colorCount;
+
             for (int i = 0; i < MaxDepth; i++)
             {
-                levels[i] = new List<OctreeNode>();
+                Levels[i] = new List<OctreeNode>();
             }
 
             Root = new OctreeNode(0, this);
@@ -28,41 +32,22 @@ namespace ColorQuantizer
 
         public void AddLevelNode(int level, OctreeNode node)
         {
-            levels[level].Add(node);
+            Levels[level].Add(node);
         }
 
-        public void AddColor(ColorRgb color)
+        public virtual void AddColor(ColorRgb color)
         {
             Root.AddColor(color, 0, this);
         }
 
-        public List<Color> MakePalette(int colorCount)
+        public virtual List<Color> MakePalette()
         {
             var palette = new List<Color>();
             int paletteIndex = 0;
 
-            int leafCount = GetLeaves().Count;
-
-            for (int i = MaxDepth - 1; i >= 0; i--)
-            {
-                if (levels[i] != null)
-                {
-                    foreach (var node in levels[i])
-                    {
-                        leafCount -= node.RemoveLeaves();
-
-                        if (leafCount <= colorCount) break;
-                    }
-
-                    if (leafCount <= colorCount) break;
-
-                    levels[i] = new List<OctreeNode>();
-                }
-            }
-
             foreach (var node in GetLeaves())
             {
-                if (paletteIndex >= colorCount) break;
+                if (paletteIndex >= ColorCount) break;
 
                 if (node.IsLeaf())
                 {
@@ -74,6 +59,30 @@ namespace ColorQuantizer
             }
 
             return palette;
+        }
+
+        protected void ReduceLeaves()
+        {
+            int leafCount = GetLeaves().Count;
+
+            if(leafCount <= ColorCount) return;
+
+            for (int i = MaxDepth - 1; i >= 0; i--)
+            {
+                if (Levels[i].Count != 0)
+                {
+                    foreach (var node in Levels[i])
+                    {
+                        leafCount -= node.RemoveLeaves();
+
+                        if (leafCount <= ColorCount) break;
+                    }
+
+                    if (leafCount <= ColorCount) break;
+
+                    //Levels[i] = new List<OctreeNode>();
+                }
+            }
         }
 
         public int GetPalletteIndex(ColorRgb color)

@@ -17,9 +17,11 @@
         </StackPanel>
         
         <StackPanel Grid.Column="1" Background="Coral">
-            <TextBox Width="100" Margin="10,20" Name="PixelCountTextBox" Text="256"/>
+            <TextBox Width="100" Margin="10,20" Name="PixelCountTextBox" Text="16"/>
             
-            <Button Margin="10,20" Content="Start" Click="Quantize"/>
+            <Button Margin="10,20" Content="Start" Click="QuantizeNormal"/>
+
+            <Button Margin="10,20" Content="Start 2" Click="QuantizeInstantReduction"/>
         </StackPanel>
     </Grid>
 </Window>
