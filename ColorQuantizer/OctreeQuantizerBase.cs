@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows.Media;
 
 namespace ColorQuantizer
@@ -45,7 +47,9 @@ namespace ColorQuantizer
             var palette = new List<Color>();
             int paletteIndex = 0;
 
-            foreach (var node in GetLeaves())
+            var list = GetLeaves();
+
+            foreach (var node in list)
             {
                 if (paletteIndex >= ColorCount) break;
 
@@ -63,7 +67,14 @@ namespace ColorQuantizer
 
         protected void ReduceLeaves()
         {
-            int leafCount = GetLeaves().Count;
+            //int leafCount = 0;
+
+            //foreach (var list in Levels)
+            //{
+            //    leafCount += list.Count(n => n.IsLeaf());
+            //}
+
+            int leafCount = GetLeafCount();
 
             if(leafCount <= ColorCount) return;
 
@@ -83,6 +94,12 @@ namespace ColorQuantizer
                     //Levels[i] = new List<OctreeNode>();
                 }
             }
+
+        }
+
+        private int GetLeafCount()
+        {
+            return Root.GetLeafNodesCount();
         }
 
         public int GetPalletteIndex(ColorRgb color)

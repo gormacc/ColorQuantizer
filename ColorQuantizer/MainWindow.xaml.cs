@@ -20,48 +20,15 @@ namespace ColorQuantizer
 
         public void QuantizeNormal(object sender, RoutedEventArgs e)
         {
-            Bitmap bitmap = ConvertImageToBitmap(ConvertFileToBitmapImage("test2.jpg", false));
-            int height = bitmap.Height;
-            int width = bitmap.Width;
-
-            int colorCount;
-
-            if (!int.TryParse(PixelCountTextBox.Text, out colorCount)) return;
-
-            OctreeQuantizerNormal octree = new OctreeQuantizerNormal(colorCount);
-
-            for (int i = 0; i < width; i++)
-            {
-                for (int j = 0; j < height; j++)
-                {
-                    Color pixel = bitmap.GetPixel(i, j);
-                    octree.AddColor(new ColorRgb(pixel.R, pixel.G, pixel.B));
-                }
-            }
-
-            List<System.Windows.Media.Color> palette = octree.MakePalette();
-
-            Bitmap outBitmap = new Bitmap(width, height);
-
-            for (int i = 0; i < width; i++)
-            {
-                for (int j = 0; j < height; j++)
-                {
-                    Color pixel = bitmap.GetPixel(i, j);
-                    int index = octree.GetPalletteIndex(new ColorRgb(pixel.R, pixel.G, pixel.B));
-
-                    System.Windows.Media.Color color = palette[index];
-                    outBitmap.SetPixel(i,j, Color.FromArgb(color.A, color.R, color.G, color.B));
-                }
-            }           
-
-            ShowImageWindow window = new ShowImageWindow(ConvertBitmapToBitmapImage(outBitmap));
-            window.Show();
-
-            ShowColorWindow(palette);
+            Quantize(false);
         }
 
         public void QuantizeInstantReduction(object sender, RoutedEventArgs e)
+        {
+            Quantize(true);
+        }
+
+        private void Quantize(bool withInstantReduction)
         {
             Bitmap bitmap = ConvertImageToBitmap(ConvertFileToBitmapImage("test.jpg", false));
             int height = bitmap.Height;
@@ -71,7 +38,16 @@ namespace ColorQuantizer
 
             if (!int.TryParse(PixelCountTextBox.Text, out colorCount)) return;
 
-            OctreeQuantizerInstantReduction octree = new OctreeQuantizerInstantReduction(colorCount);
+            OctreeQuantizerBase octree;
+
+            if (!withInstantReduction)
+            {
+                octree = new OctreeQuantizerNormal(colorCount);
+            }
+            else
+            {
+                octree = new OctreeQuantizerInstantReduction(colorCount);
+            }
 
             for (int i = 0; i < width; i++)
             {
@@ -100,8 +76,6 @@ namespace ColorQuantizer
 
             ShowImageWindow window = new ShowImageWindow(ConvertBitmapToBitmapImage(outBitmap));
             window.Show();
-
-            ShowColorWindow(palette);
         }
 
         private void ShowColorWindow(List<System.Windows.Media.Color> palette)

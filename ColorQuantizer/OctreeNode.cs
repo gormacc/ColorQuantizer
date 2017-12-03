@@ -26,6 +26,22 @@ namespace ColorQuantizer
             return PixelCount > 0;
         }
 
+        public int GetLeafNodesCount()
+        {
+            int ret = 0;
+
+            foreach (var node in _children)
+            {
+                if(node == null) continue;
+
+                if (node.IsLeaf()) ret++;
+
+                ret += node.GetLeafNodesCount();
+            }
+
+            return ret;
+        }
+
         public List<OctreeNode> GetLeafNodes()
         {
             var retList = new List<OctreeNode>();
@@ -47,15 +63,12 @@ namespace ColorQuantizer
             return retList;
         }
 
-        public int GetNodesPixelCount()
-        {
-            return PixelCount + _children.Sum(node => node.PixelCount);
-        }
-
         public void AddColor(ColorRgb color, int level, OctreeQuantizerBase parent)
         {
             if (level >= MaxDepth)
             {
+                //if (PixelCount == 0) parent.LeafCount++;
+
                 Color.Red += color.Red;
                 Color.Green += color.Green;
                 Color.Blue += color.Blue;
