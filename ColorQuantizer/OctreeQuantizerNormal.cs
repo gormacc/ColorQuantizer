@@ -12,7 +12,6 @@ namespace ColorQuantizer
         public override List<Color> MakePalette()
         {
             base.ReduceLeaves();
-
             return base.MakePalette();
         }
     }

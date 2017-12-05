@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Windows.Media;
 
 namespace ColorQuantizer
@@ -67,14 +66,7 @@ namespace ColorQuantizer
 
         protected void ReduceLeaves()
         {
-            //int leafCount = 0;
-
-            //foreach (var list in Levels)
-            //{
-            //    leafCount += list.Count(n => n.IsLeaf());
-            //}
-
-            int leafCount = GetLeafCount();
+            int leafCount = GetLeaves().Count;
 
             if(leafCount <= ColorCount) return;
 
@@ -84,14 +76,12 @@ namespace ColorQuantizer
                 {
                     foreach (var node in Levels[i])
                     {
-                        leafCount -= node.RemoveLeaves();
+                        leafCount -= Math.Max(0, node.RemoveLeaves());
 
                         if (leafCount <= ColorCount) break;
                     }
 
                     if (leafCount <= ColorCount) break;
-
-                    //Levels[i] = new List<OctreeNode>();
                 }
             }
 

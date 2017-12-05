@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using System.Windows.Media;
 
 namespace ColorQuantizer
@@ -15,7 +14,7 @@ namespace ColorQuantizer
 
         public OctreeNode(int level, OctreeQuantizerBase parent)
         {
-            if (level < MaxDepth - 1)
+            if (level < MaxDepth)
             {
                 parent.AddLevelNode(level, this);
             }
@@ -65,10 +64,8 @@ namespace ColorQuantizer
 
         public void AddColor(ColorRgb color, int level, OctreeQuantizerBase parent)
         {
-            if (level >= MaxDepth)
+            if (level >= MaxDepth || IsLeaf())
             {
-                //if (PixelCount == 0) parent.LeafCount++;
-
                 Color.Red += color.Red;
                 Color.Green += color.Green;
                 Color.Blue += color.Blue;
@@ -102,7 +99,6 @@ namespace ColorQuantizer
                 }
             }
 
-
             return 0;
         }
 
@@ -123,12 +119,11 @@ namespace ColorQuantizer
                         result += 1;
                         node.PixelCount = 0;
                         node.Color = new ColorRgb(0, 0, 0);
-                    }
-                    
+                    }                   
                 }
             }
 
-            return result - 1;
+            return result == 0 ? 0 : result - 1;
         }
 
         public int GetColorIndexForLevel(ColorRgb color, int level) // do rozkminy

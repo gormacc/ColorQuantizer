@@ -1,5 +1,4 @@
-﻿using System;
-
+﻿
 namespace ColorQuantizer
 {
     public class OctreeQuantizerInstantReduction : OctreeQuantizerBase
@@ -11,10 +10,7 @@ namespace ColorQuantizer
         public override void AddColor(ColorRgb color)
         {
             base.AddColor(color);
-
             base.ReduceLeaves();
-        }
-
-        
+        } 
     }
 }
