@@ -23,7 +23,7 @@
             <StackPanel Grid.Row="1">
                 <Button Content="Load image" Width="150" Click="LoadImage"/>
 
-                <TextBox Width="100" Margin="10,20" Name="PixelCountTextBox" Text="16"/>
+                <TextBox Width="100" Margin="10,20" Name="PixelCountTextBox" Text="64"/>
 
                 <UniformGrid Margin="10,20" >
                     <Button  Content="Start" Click="QuantizeNormal"/>

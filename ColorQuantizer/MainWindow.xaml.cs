@@ -1,11 +1,8 @@
 ﻿using Microsoft.Win32;
-using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Windows;
-using System.Windows.Media.Imaging;
 
 namespace ColorQuantizer
 {
@@ -32,24 +29,38 @@ namespace ColorQuantizer
         {
             if (imageToQuantizeBitmap == null) return;
 
+            OctreeQuantizerBase octree = InitializeOctree(withInstantReduction);
 
-            int height = imageToQuantizeBitmap.Height;
-            int width = imageToQuantizeBitmap.Width;
+            List<System.Windows.Media.Color> palette = MakePalette(octree);
 
+            Bitmap outBitmap = RewriteImageWithPalette(octree, palette);
+
+            ShowBitmap(outBitmap, withInstantReduction);
+        }
+
+        private OctreeQuantizerBase InitializeOctree(bool withInstantReduction)
+        {
             int colorCount;
 
-            if (!int.TryParse(PixelCountTextBox.Text, out colorCount)) return;
-
-            OctreeQuantizerBase octree;
+            if (!int.TryParse(PixelCountTextBox.Text, out colorCount))
+            {
+                colorCount = 64;
+            }
 
             if (!withInstantReduction)
             {
-                octree = new OctreeQuantizerNormal(colorCount);
+                return new OctreeQuantizerNormal(colorCount);
             }
             else
             {
-                octree = new OctreeQuantizerInstantReduction(colorCount);
+                return new OctreeQuantizerInstantReduction(colorCount);
             }
+        }
+
+        private List<System.Windows.Media.Color> MakePalette(OctreeQuantizerBase octree)
+        {
+            int height = imageToQuantizeBitmap.Height;
+            int width = imageToQuantizeBitmap.Width;
 
             for (int i = 0; i < width; i++)
             {
@@ -60,7 +71,13 @@ namespace ColorQuantizer
                 }
             }
 
-            List<System.Windows.Media.Color> palette = octree.MakePalette();
+            return octree.MakePalette();
+        }
+
+        private Bitmap RewriteImageWithPalette(OctreeQuantizerBase octree, List<System.Windows.Media.Color> palette)
+        {
+            int height = imageToQuantizeBitmap.Height;
+            int width = imageToQuantizeBitmap.Width;
 
             Bitmap outBitmap = new Bitmap(width, height);
 
@@ -76,72 +93,31 @@ namespace ColorQuantizer
                 }
             }
 
+            return outBitmap;
+        }
+
+        private void ShowBitmap(Bitmap bitmap, bool withInstantReduction)
+        {
             if (!withInstantReduction)
             {
-                QuantizerNormalImage.Source = ConvertBitmapToBitmapImage(outBitmap);
+                QuantizerNormalImage.Source = ImageHelper.ConvertBitmapToBitmapImage(bitmap);
             }
             else
             {
-                QuantizerInstantReductionImage.Source = ConvertBitmapToBitmapImage(outBitmap);
-            }
-        }
-
-        public Bitmap ConvertImageToBitmap(BitmapImage bitmapImage)
-        {
-            using (var outStream = new MemoryStream())
-            {
-                BitmapEncoder enc = new BmpBitmapEncoder();
-                enc.Frames.Add(BitmapFrame.Create(bitmapImage));
-                enc.Save(outStream);
-                Bitmap bitmap = new Bitmap(outStream);
-
-                return new Bitmap(bitmap, (int)bitmapImage.Width, (int)bitmapImage.Height);
-            }
-        }
-
-        public BitmapImage ConvertFileToBitmapImage(string fileNameOrPath, bool isFullPath)
-        {
-            BitmapImage bmp = new BitmapImage();
-            try
-            {
-                bmp.BeginInit();
-                bmp.UriSource = isFullPath ? new Uri(fileNameOrPath) : new Uri(Path.Combine(Directory.GetCurrentDirectory(), fileNameOrPath));
-                bmp.EndInit();
-            }
-            catch (Exception e)
-            {
-                MessageBox.Show(e.ToString());
-            }
-
-            return bmp;
-        }
-
-        public BitmapImage ConvertBitmapToBitmapImage(Bitmap bitmap)
-        {
-            using (MemoryStream memory = new MemoryStream())
-            {
-                bitmap.Save(memory, ImageFormat.Png);
-                memory.Position = 0;
-                BitmapImage bitmapImage = new BitmapImage();
-                bitmapImage.BeginInit();
-                bitmapImage.StreamSource = memory;
-                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-                bitmapImage.EndInit();
-
-                return bitmapImage;
+                QuantizerInstantReductionImage.Source = ImageHelper.ConvertBitmapToBitmapImage(bitmap);
             }
         }
 
         private void LoadImage(object sender, RoutedEventArgs e)
         {
             OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Filter = "Image files (*.png;*.jpeg)|*.png;*.jpeg|All files (*.*)|*.*";
+            openFileDialog.Filter = "Image files (*.png;*.jpeg;*.bmp;*.jpg;*.gif)|*.png;*.jpeg;*.bmp;*.jpg;*.gif|All files (*.*)|*.*";
             openFileDialog.InitialDirectory = Directory.GetCurrentDirectory();
 
             if (openFileDialog.ShowDialog() == true)
             {
-                imageToQuantizeBitmap = ConvertImageToBitmap(ConvertFileToBitmapImage(openFileDialog.FileName, true));
-                ImageToQuantize.Source = ConvertBitmapToBitmapImage(imageToQuantizeBitmap);
+                imageToQuantizeBitmap = ImageHelper.ConvertImageToBitmap(ImageHelper.ConvertFileToBitmapImage(openFileDialog.FileName, true));
+                ImageToQuantize.Source = ImageHelper.ConvertBitmapToBitmapImage(imageToQuantizeBitmap);
             }
         }
     }
