@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using System.Windows.Media;
 
 namespace ColorQuantizer
@@ -9,13 +8,13 @@ namespace ColorQuantizer
         public ColorRgb Color = new ColorRgb(0,0,0);
         public int PixelCount = 0;
         public int PaletteIndex = 0;
-        private OctreeNode[] _children = new OctreeNode[8];
+        private readonly OctreeNode[] _children = new OctreeNode[8];
 
         private const int MaxDepth = 8;
 
-        public OctreeNode(int level, OctreeQuantizer parent)
+        public OctreeNode(int level, OctreeQuantizerBase parent)
         {
-            if (level < MaxDepth - 1)
+            if (level < MaxDepth)
             {
                 parent.AddLevelNode(level, this);
             }
@@ -24,6 +23,22 @@ namespace ColorQuantizer
         public bool IsLeaf()
         {
             return PixelCount > 0;
+        }
+
+        public int GetLeafNodesCount()
+        {
+            int ret = 0;
+
+            foreach (var node in _children)
+            {
+                if(node == null) continue;
+
+                if (node.IsLeaf()) ret++;
+
+                ret += node.GetLeafNodesCount();
+            }
+
+            return ret;
         }
 
         public List<OctreeNode> GetLeafNodes()
@@ -47,14 +62,9 @@ namespace ColorQuantizer
             return retList;
         }
 
-        public int GetNodesPixelCount()
+        public void AddColor(ColorRgb color, int level, OctreeQuantizerBase parent)
         {
-            return PixelCount + _children.Sum(node => node.PixelCount);
-        }
-
-        public void AddColor(ColorRgb color, int level, OctreeQuantizer parent)
-        {
-            if (level >= MaxDepth)
+            if (level >= MaxDepth || IsLeaf())
             {
                 Color.Red += color.Red;
                 Color.Green += color.Green;
@@ -89,7 +99,6 @@ namespace ColorQuantizer
                 }
             }
 
-
             return 0;
         }
 
@@ -105,11 +114,16 @@ namespace ColorQuantizer
                     Color.Green += node.Color.Green;
                     Color.Blue += node.Color.Blue;
                     PixelCount += node.PixelCount;
-                    result += 1;
+                    if (node.PixelCount != 0)
+                    {
+                        result += 1;
+                        node.PixelCount = 0;
+                        node.Color = new ColorRgb(0, 0, 0);
+                    }                   
                 }
             }
 
-            return result - 1;
+            return result == 0 ? 0 : result - 1;
         }
 
         public int GetColorIndexForLevel(ColorRgb color, int level) // do rozkminy

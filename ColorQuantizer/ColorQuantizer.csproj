@@ -55,6 +55,8 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="OctreeQuantizerInstantReduction.cs" />
+    <Compile Include="OctreeQuantizerNormal.cs" />
     <Compile Include="ShowImageWindow.xaml.cs">
       <DependentUpon>ShowImageWindow.xaml</DependentUpon>
     </Compile>
@@ -78,7 +80,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="OctreeNode.cs" />
-    <Compile Include="OctreeQuantizer.cs" />
+    <Compile Include="OctreeQuantizerBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>

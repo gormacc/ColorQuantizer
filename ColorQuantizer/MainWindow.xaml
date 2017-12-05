@@ -5,21 +5,47 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorQuantizer"
         mc:Ignorable="d"
-        Title="MainWindow" Height="350" Width="525">
+        Title="ColorQuantizer" Height="350" Width="525">
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="5*"/>
-            <ColumnDefinition Width="2*"/>
+            <ColumnDefinition Width="4*"/>
+            <ColumnDefinition Width="3*"/>
         </Grid.ColumnDefinitions>
-        
-        <StackPanel Grid.Column="0">
-            <Image Name="ImageToShow"></Image>
-        </StackPanel>
-        
-        <StackPanel Grid.Column="1" Background="Coral">
-            <TextBox Width="100" Margin="10,20" Name="PixelCountTextBox" Text="256"/>
-            
-            <Button Margin="10,20" Content="Start" Click="Quantize"/>
-        </StackPanel>
+
+        <Grid Grid.Column="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="4*"/>
+                <RowDefinition Height="3*"/>
+            </Grid.RowDefinitions>
+
+            <Image Grid.Row="0" Name="ImageToQuantize"/>
+
+            <StackPanel Grid.Row="1">
+                <Button Content="Load image" Width="150" Click="LoadImage"/>
+
+                <TextBox Width="100" Margin="10,20" Name="PixelCountTextBox" Text="16"/>
+
+                <UniformGrid Margin="10,20" >
+                    <Button  Content="Start" Click="QuantizeNormal"/>
+                    <Button Content="Start 2" Click="QuantizeInstantReduction"/>
+                </UniformGrid>
+
+            </StackPanel>
+        </Grid>
+
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="9*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="9*"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Text="Reduce after octree construction"/>
+            <Image Grid.Row="1" Name="QuantizerNormalImage"/>
+
+            <TextBlock Grid.Row="2" Text="Reduce along octree construction"/>
+            <Image Grid.Row="3" Name="QuantizerInstantReductionImage"/>
+        </Grid>
     </Grid>
 </Window>
