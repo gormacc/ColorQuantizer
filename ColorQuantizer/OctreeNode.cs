@@ -25,22 +25,6 @@ namespace ColorQuantizer
             return PixelCount > 0;
         }
 
-        public int GetLeafNodesCount()
-        {
-            int ret = 0;
-
-            foreach (var node in _children)
-            {
-                if(node == null) continue;
-
-                if (node.IsLeaf()) ret++;
-
-                ret += node.GetLeafNodesCount();
-            }
-
-            return ret;
-        }
-
         public List<OctreeNode> GetLeafNodes()
         {
             var retList = new List<OctreeNode>();
@@ -66,9 +50,9 @@ namespace ColorQuantizer
         {
             if (level >= MaxDepth || IsLeaf())
             {
-                Color.Red += color.Red;
-                Color.Green += color.Green;
-                Color.Blue += color.Blue;
+                if (PixelCount == 0) parent.LeafCount++;
+
+                Color.AddColor(color);
                 PixelCount += 1;
                 return;
             }
@@ -110,9 +94,8 @@ namespace ColorQuantizer
             {
                 if (node != null)
                 {
-                    Color.Red += node.Color.Red;
-                    Color.Green += node.Color.Green;
-                    Color.Blue += node.Color.Blue;
+
+                    Color.AddColor(node.Color);
                     PixelCount += node.PixelCount;
                     if (node.PixelCount != 0)
                     {
@@ -126,7 +109,7 @@ namespace ColorQuantizer
             return result == 0 ? 0 : result - 1;
         }
 
-        public int GetColorIndexForLevel(ColorRgb color, int level) // do rozkminy
+        public int GetColorIndexForLevel(ColorRgb color, int level)
         {
             var index = 0;
             var mask = 0x80 >> level;

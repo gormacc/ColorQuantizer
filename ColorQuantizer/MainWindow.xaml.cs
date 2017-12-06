@@ -1,66 +1,151 @@
-﻿using Microsoft.Win32;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Windows;
-using System.Windows.Media.Imaging;
+using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 
 namespace ColorQuantizer
 {
     public partial class MainWindow : Window
     {
-        private Bitmap imageToQuantizeBitmap;
+        private Bitmap _imageToQuantizeBitmap;
+        private BackgroundWorker _backgroundWorkerOne = new BackgroundWorker();
+        private BackgroundWorker _backgroundWorkerTwo = new BackgroundWorker();
+        private Bitmap _backgroundWorkerOneBitmap;
+        private Bitmap _backgroundWorkerTwoBitmap;
+        public int ColorCount { get; set; } = 64;
 
         public MainWindow()
         {
             InitializeComponent();
+            InitializeBackgroundWorkers();
         }
 
-        public void QuantizeNormal(object sender, RoutedEventArgs e)
+        #region BackgroundWorker
+
+        private void InitializeBackgroundWorkers()
         {
-            Quantize(false);
+            _backgroundWorkerOne.WorkerReportsProgress = true;
+            _backgroundWorkerTwo.WorkerReportsProgress = true;
+
+            _backgroundWorkerOne.WorkerSupportsCancellation = false;
+            _backgroundWorkerTwo.WorkerSupportsCancellation = false;
+
+            _backgroundWorkerOne.DoWork += QuantizeNormal;
+            _backgroundWorkerTwo.DoWork += QuantizeInstantReduction;
+
+            _backgroundWorkerOne.ProgressChanged += QuantizeNormalProgress;
+            _backgroundWorkerTwo.ProgressChanged += QuantizeInstantReductionProgress;
+
+            _backgroundWorkerOne.RunWorkerCompleted += EndQuantizeNormal;
+            _backgroundWorkerTwo.RunWorkerCompleted += EndQuantizeInstantReduction;
         }
 
-        public void QuantizeInstantReduction(object sender, RoutedEventArgs e)
+        private void QuantizeNormal(object sender, DoWorkEventArgs e)
         {
-            Quantize(true);
+            if (_imageToQuantizeBitmap == null) return;
+
+            Quantize(false, new Bitmap(_imageToQuantizeBitmap));
         }
 
-        private void Quantize(bool withInstantReduction)
+        private void QuantizeInstantReduction(object sender, DoWorkEventArgs e)
         {
-            if (imageToQuantizeBitmap == null) return;
+            if (_imageToQuantizeBitmap == null) return;
 
+            Quantize(true, new Bitmap(_imageToQuantizeBitmap));
+        }
 
-            int height = imageToQuantizeBitmap.Height;
-            int width = imageToQuantizeBitmap.Width;
+        private void QuantizeNormalProgress(object sender, ProgressChangedEventArgs e)
+        {
+            QuantizerNormalProgressBar.Value = e.ProgressPercentage;
+        }
 
-            int colorCount;
+        private void QuantizeInstantReductionProgress(object sender, ProgressChangedEventArgs e)
+        {
+            QuantizerInstantReductionProgressBar.Value = e.ProgressPercentage;
+        }
 
-            if (!int.TryParse(PixelCountTextBox.Text, out colorCount)) return;
+        private void EndQuantizeNormal(object sender, RunWorkerCompletedEventArgs e)
+        {
+            ShowBitmap(false);
+            QuantizeNormalButton.IsEnabled = true;
+        }
 
-            OctreeQuantizerBase octree;
+        private void EndQuantizeInstantReduction(object sender, RunWorkerCompletedEventArgs e)
+        {
+            ShowBitmap(true);
+            QuantizeInstantReductionButton.IsEnabled = true;
+        }
 
+        public void QuantizeNormalClick(object sender, RoutedEventArgs e)
+        {
+            if (!_backgroundWorkerOne.IsBusy)
+            {
+                QuantizeNormalButton.IsEnabled = false;
+                _backgroundWorkerOne.RunWorkerAsync();
+            }
+        }
+
+        public void QuantizeInstantReductionClick(object sender, RoutedEventArgs e)
+        {
+            if (!_backgroundWorkerTwo.IsBusy)
+            {
+                QuantizeInstantReductionButton.IsEnabled = false;
+                _backgroundWorkerTwo.RunWorkerAsync();
+            }
+        }
+
+        #endregion
+
+        #region Quantization
+
+        private void Quantize(bool withInstantReduction, Bitmap bitmap)
+        {
+            if (bitmap == null) return;
+
+            OctreeQuantizerBase octree = InitializeOctree(withInstantReduction, ColorCount);
+
+            List<System.Windows.Media.Color> palette = MakePalette(octree, bitmap, withInstantReduction);
+
+            RewriteImageWithPalette(octree, palette, bitmap, withInstantReduction);
+        }
+
+        private OctreeQuantizerBase InitializeOctree(bool withInstantReduction, int colorCount)
+        {
             if (!withInstantReduction)
             {
-                octree = new OctreeQuantizerNormal(colorCount);
+                return new OctreeQuantizerNormal(colorCount);
             }
             else
             {
-                octree = new OctreeQuantizerInstantReduction(colorCount);
+                return new OctreeQuantizerInstantReduction(colorCount);
             }
+        }
+
+        private List<System.Windows.Media.Color> MakePalette(OctreeQuantizerBase octree, Bitmap bitmap, bool withInstantReduction)
+        {
+            int height = bitmap.Height;
+            int width = bitmap.Width;
 
             for (int i = 0; i < width; i++)
             {
                 for (int j = 0; j < height; j++)
                 {
-                    Color pixel = imageToQuantizeBitmap.GetPixel(i, j);
+                    Color pixel = bitmap.GetPixel(i, j);
                     octree.AddColor(new ColorRgb(pixel.R, pixel.G, pixel.B));
                 }
+                ReportProgressToWorker(withInstantReduction, 100 * i / width);
             }
 
-            List<System.Windows.Media.Color> palette = octree.MakePalette();
+            return octree.MakePalette();
+        }
+
+        private void RewriteImageWithPalette(OctreeQuantizerBase octree, List<System.Windows.Media.Color> palette, Bitmap bitmap, bool withInstantReduction)
+        {
+            int height = bitmap.Height;
+            int width = bitmap.Width;
 
             Bitmap outBitmap = new Bitmap(width, height);
 
@@ -68,81 +153,67 @@ namespace ColorQuantizer
             {
                 for (int j = 0; j < height; j++)
                 {
-                    Color pixel = imageToQuantizeBitmap.GetPixel(i, j);
+                    Color pixel = bitmap.GetPixel(i, j);
                     int index = octree.GetPalletteIndex(new ColorRgb(pixel.R, pixel.G, pixel.B));
 
                     System.Windows.Media.Color color = palette[index];
                     outBitmap.SetPixel(i, j, Color.FromArgb(color.A, color.R, color.G, color.B));
                 }
+                ReportProgressToWorker(withInstantReduction, 100 * i / width);
             }
 
+            SetQuantizedBitmap(withInstantReduction, outBitmap);
+        }
+
+        private void ReportProgressToWorker(bool withInstantReduction, int percentage)
+        {
             if (!withInstantReduction)
             {
-                QuantizerNormalImage.Source = ConvertBitmapToBitmapImage(outBitmap);
+                _backgroundWorkerOne.ReportProgress(percentage);
             }
             else
             {
-                QuantizerInstantReductionImage.Source = ConvertBitmapToBitmapImage(outBitmap);
+                _backgroundWorkerTwo.ReportProgress(percentage);
             }
         }
 
-        public Bitmap ConvertImageToBitmap(BitmapImage bitmapImage)
+        private void SetQuantizedBitmap(bool withInstantReduction, Bitmap bitmap)
         {
-            using (var outStream = new MemoryStream())
+            if (!withInstantReduction)
             {
-                BitmapEncoder enc = new BmpBitmapEncoder();
-                enc.Frames.Add(BitmapFrame.Create(bitmapImage));
-                enc.Save(outStream);
-                Bitmap bitmap = new Bitmap(outStream);
-
-                return new Bitmap(bitmap, (int)bitmapImage.Width, (int)bitmapImage.Height);
+                _backgroundWorkerOneBitmap = bitmap;
+            }
+            else
+            {
+                _backgroundWorkerTwoBitmap = bitmap;
             }
         }
 
-        public BitmapImage ConvertFileToBitmapImage(string fileNameOrPath, bool isFullPath)
+        private void ShowBitmap(bool withInstantReduction)
         {
-            BitmapImage bmp = new BitmapImage();
-            try
+            if (!withInstantReduction)
             {
-                bmp.BeginInit();
-                bmp.UriSource = isFullPath ? new Uri(fileNameOrPath) : new Uri(Path.Combine(Directory.GetCurrentDirectory(), fileNameOrPath));
-                bmp.EndInit();
+                QuantizerNormalImage.Source = ImageHelper.ConvertBitmapToBitmapImage(_backgroundWorkerOneBitmap);
             }
-            catch (Exception e)
+            else
             {
-                MessageBox.Show(e.ToString());
-            }
-
-            return bmp;
-        }
-
-        public BitmapImage ConvertBitmapToBitmapImage(Bitmap bitmap)
-        {
-            using (MemoryStream memory = new MemoryStream())
-            {
-                bitmap.Save(memory, ImageFormat.Png);
-                memory.Position = 0;
-                BitmapImage bitmapImage = new BitmapImage();
-                bitmapImage.BeginInit();
-                bitmapImage.StreamSource = memory;
-                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-                bitmapImage.EndInit();
-
-                return bitmapImage;
+                QuantizerInstantReductionImage.Source = ImageHelper.ConvertBitmapToBitmapImage(_backgroundWorkerTwoBitmap);
             }
         }
 
         private void LoadImage(object sender, RoutedEventArgs e)
         {
             OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Filter = "Image files (*.png;*.jpeg)|*.png;*.jpeg|All files (*.*)|*.*";
+            openFileDialog.Filter = "Image files (*.png;*.jpeg;*.bmp;*.jpg;*.gif)|*.png;*.jpeg;*.bmp;*.jpg;*.gif|All files (*.*)|*.*";
             openFileDialog.InitialDirectory = Directory.GetCurrentDirectory();
 
             if (openFileDialog.ShowDialog() == true)
             {
-                imageToQuantizeBitmap = ConvertImageToBitmap(ConvertFileToBitmapImage(openFileDialog.FileName, true));
-                ImageToQuantize.Source = ConvertBitmapToBitmapImage(imageToQuantizeBitmap);
+                _imageToQuantizeBitmap = ImageHelper.ConvertImageToBitmap(ImageHelper.ConvertFileToBitmapImage(openFileDialog.FileName, true));
+                ImageToQuantize.Source = ImageHelper.ConvertBitmapToBitmapImage(_imageToQuantizeBitmap);
             }
         }
+
+        #endregion
     }
 }

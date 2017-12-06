@@ -26,5 +26,12 @@ namespace ColorQuantizer
                 A = 255
             };
         }
+
+        public void AddColor(ColorRgb color)
+        {
+            Red += color.Red;
+            Green += color.Green;
+            Blue += color.Blue;
+        }
     }
 }
