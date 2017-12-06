@@ -11,6 +11,8 @@ namespace ColorQuantizer
 
         protected int ColorCount = 0;
 
+        public int LeafCount = 0;
+
         public OctreeNode Root;        
 
         public OctreeQuantizerBase(int colorCount)
@@ -65,7 +67,7 @@ namespace ColorQuantizer
 
         protected void ReduceLeaves()
         {
-            int leafCount = GetLeaves().Count; // do poprawy
+            int leafCount = LeafCount;
 
             if(leafCount <= ColorCount) return;
 
@@ -84,6 +86,7 @@ namespace ColorQuantizer
                 }
             }
 
+            LeafCount = leafCount;
         }
 
         public int GetPalletteIndex(ColorRgb color)

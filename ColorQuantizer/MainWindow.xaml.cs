@@ -1,11 +1,9 @@
 ﻿using System;
-using System.CodeDom;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.Windows;
-using System.Windows.Forms;
 using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 
 namespace ColorQuantizer
@@ -17,7 +15,6 @@ namespace ColorQuantizer
         private BackgroundWorker _backgroundWorkerTwo = new BackgroundWorker();
         private Bitmap _backgroundWorkerOneBitmap;
         private Bitmap _backgroundWorkerTwoBitmap;
-        private Action GetColorCountAction;
         public int ColorCount { get; set; } = 64;
 
         public MainWindow()
@@ -26,10 +23,10 @@ namespace ColorQuantizer
             InitializeBackgroundWorkers();
         }
 
+        #region BackgroundWorker
+
         private void InitializeBackgroundWorkers()
         {
-
-
             _backgroundWorkerOne.WorkerReportsProgress = true;
             _backgroundWorkerTwo.WorkerReportsProgress = true;
 
@@ -88,7 +85,7 @@ namespace ColorQuantizer
             {
                 QuantizeNormalButton.IsEnabled = false;
                 _backgroundWorkerOne.RunWorkerAsync();
-            }            
+            }
         }
 
         public void QuantizeInstantReductionClick(object sender, RoutedEventArgs e)
@@ -100,11 +97,15 @@ namespace ColorQuantizer
             }
         }
 
+        #endregion
+
+        #region Quantization
+
         private void Quantize(bool withInstantReduction, Bitmap bitmap)
         {
             if (bitmap == null) return;
 
-            OctreeQuantizerBase octree = InitializeOctree(withInstantReduction,ColorCount);
+            OctreeQuantizerBase octree = InitializeOctree(withInstantReduction, ColorCount);
 
             List<System.Windows.Media.Color> palette = MakePalette(octree, bitmap, withInstantReduction);
 
@@ -112,7 +113,7 @@ namespace ColorQuantizer
         }
 
         private OctreeQuantizerBase InitializeOctree(bool withInstantReduction, int colorCount)
-        {           
+        {
             if (!withInstantReduction)
             {
                 return new OctreeQuantizerNormal(colorCount);
@@ -212,5 +213,7 @@ namespace ColorQuantizer
                 ImageToQuantize.Source = ImageHelper.ConvertBitmapToBitmapImage(_imageToQuantizeBitmap);
             }
         }
+
+        #endregion
     }
 }

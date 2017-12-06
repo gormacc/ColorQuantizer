@@ -50,6 +50,8 @@ namespace ColorQuantizer
         {
             if (level >= MaxDepth || IsLeaf())
             {
+                if (PixelCount == 0) parent.LeafCount++;
+
                 Color.AddColor(color);
                 PixelCount += 1;
                 return;
