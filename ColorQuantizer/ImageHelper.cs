@@ -41,6 +41,8 @@ namespace ColorQuantizer
 
         public static BitmapImage ConvertBitmapToBitmapImage(Bitmap bitmap)
         {
+            if(bitmap == null) return new BitmapImage();
+
             using (MemoryStream memory = new MemoryStream())
             {
                 bitmap.Save(memory, ImageFormat.Png);
